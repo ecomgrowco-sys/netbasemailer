@@ -1,0 +1,115 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "netbasemailer",
+	"main": "./worker.ts",
+	"compatibility_date": "2026-05-20",
+	"keep_vars": true,
+	"compatibility_flags": [
+		"nodejs_compat",
+		"global_fetch_strictly_public"
+	],
+	"assets": {
+		"binding": "ASSETS",
+		"not_found_handling": "none",
+	},
+	"images": {
+		"binding": "IMAGES",
+	},
+	"services": [
+		{
+			"binding": "WORKER_SELF_REFERENCE",
+			"service": "mailflare",
+		},
+	],
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "REALTIME",
+				"class_name": "RealtimeHub",
+			},
+		],
+	},
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_sqlite_classes": [
+				"RealtimeHub",
+			],
+		},
+	],
+	"triggers": {
+		"crons": ["0 2 * * *", "*/5 * * * *"],
+	},
+	"ratelimits": [
+		{
+			"name": "LOGIN_RATE_LIMIT",
+			"namespace_id": "1001",
+			"simple": {
+				"limit": 20,
+				"period": 60,
+			},
+		},
+		{
+			"name": "AGENT_RATE_LIMIT",
+			"namespace_id": "1002",
+			"simple": { "limit": 120, "period": 60 },
+		},
+	],
+	"observability": {
+		"enabled": true,
+	},
+	"upload_source_maps": true,
+	"send_email": [
+		{
+			"name": "EMAIL",
+			"remote": false,
+		},
+	],
+	"ai": { "binding": "AI", "remote": true },
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "netbasemailer",
+			"migrations_dir": "drizzle/migrations","database_id": "cca585a7-b9e9-48be-836a-7ae372c908a3",
+		},
+	],
+	"r2_buckets": [
+		{
+			"binding": "BUCKET",
+			"bucket_name": "netbasemailer","preview_bucket_name": "netbasemailer",
+		},
+	],
+	"queues": {
+		"producers": [
+			{
+				"binding": "INBOUND_QUEUE",
+				"queue": "netbasemailer-inbound",
+			},
+			{
+				"binding": "OUTBOUND_QUEUE",
+				"queue": "netbasemailer-outbound",
+			},
+			{
+				"binding": "AGENT_QUEUE",
+				"queue": "netbasemailer-agent",
+			},
+		],
+		"consumers": [
+			{
+				"queue": "netbasemailer-inbound",
+				"max_batch_size": 5,
+				"max_retries": 3,
+			},
+			{
+				"queue": "netbasemailer-outbound",
+				"max_batch_size": 5,
+				"max_retries": 3,
+			},
+			{
+				"queue": "netbasemailer-agent",
+				"max_batch_size": 1,
+				"max_retries": 3,
+			},
+		],
+	},
+}
